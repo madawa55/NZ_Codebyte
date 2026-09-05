@@ -97,10 +97,42 @@ export interface SeniorFeedback {
   optimizedSeniorSnippet: string;
 }
 
+export type ExecutionResult = ExecutionResponse;
+export type SeniorReviewFeedback = SeniorFeedback;
+
 export interface UserProgress {
   solvedChallengeIds: string[];
   bookmarkedChallengeIds: string[];
   codeDrafts: Record<string, string>; // challengeId -> code
   lastExecutionResults: Record<string, ExecutionResponse>;
   bestTimes: Record<string, number>;
+}
+
+export type BackgroundThemeId =
+  | "studio-light"
+  | "arctic-frost"
+  | "warm-stone"
+  | "mint-clean"
+  | "lavender-mist"
+  | "midnight-slate"
+  | "oled-black"
+  | "cyber-matrix"
+  | "oceanic-abyss"
+  | "twilight-velvet"
+  | "sunset-ember";
+
+export type BackgroundPatternId = "grid" | "dots" | "aurora" | "clean";
+
+export interface BackgroundTheme {
+  id: BackgroundThemeId;
+  name: string;
+  tagline: string;
+  category: "Light" | "Dark" | "Cyber" | "Atmospheric";
+  isDark: boolean;
+  bgClass: string;
+  previewColor: string;
+  accentColor: string;
+  glowClass: string;
+  borderColor: string;
+  cardBg: string;
 }

@@ -1,13 +1,14 @@
 import React from "react";
-import { SeniorFeedback, ExecutionResponse, Challenge } from "../types";
+import { SeniorReviewFeedback, ExecutionResult, Challenge } from "../types";
 import { Cpu, Clock, Sparkles, BookOpen, ShieldCheck } from "lucide-react";
 
 interface SeniorSkillRadarProps {
-  seniorFeedback: SeniorFeedback | null;
-  executionResult: ExecutionResponse | null;
+  seniorFeedback: SeniorReviewFeedback | null;
+  executionResult: ExecutionResult | null;
   currentChallenge: Challenge;
   onOpenGuide: () => void;
   onRequestHint: () => void;
+  isDark?: boolean;
 }
 
 export const SeniorSkillRadar: React.FC<SeniorSkillRadarProps> = ({
@@ -16,6 +17,7 @@ export const SeniorSkillRadar: React.FC<SeniorSkillRadarProps> = ({
   currentChallenge,
   onOpenGuide,
   onRequestHint,
+  isDark = true,
 }) => {
   // Calculate dynamic skill metrics
   const isPassed = executionResult?.overallStatus === "passed";
@@ -35,30 +37,36 @@ export const SeniorSkillRadar: React.FC<SeniorSkillRadarProps> = ({
     : 78;
 
   return (
-    <section className="h-full bg-indigo-900/20 border border-indigo-500/20 rounded-2xl p-4 flex flex-col justify-between shadow-lg backdrop-blur-sm overflow-hidden select-text">
+    <section className={`h-full rounded-2xl p-4 flex flex-col justify-between shadow-sm overflow-hidden select-text transition-colors duration-300 border ${
+      isDark 
+        ? "bg-indigo-900/20 border-indigo-500/20 backdrop-blur-sm" 
+        : "bg-white border-slate-200"
+    }`}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
+          <div className={`w-6 h-6 rounded-lg flex items-center justify-center border ${
+            isDark ? "bg-indigo-600/30 border-indigo-500/40 text-indigo-400" : "bg-indigo-50 border-indigo-200 text-indigo-600"
+          }`}>
             <ShieldCheck className="w-3.5 h-3.5" />
           </div>
           <div>
-            <h3 className="text-xs font-bold text-indigo-400 uppercase tracking-widest">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-indigo-600">
               Senior Skill Radar
             </h3>
-            <p className="text-[11px] text-slate-400">
-              NZ Target: <strong className="text-slate-200">{currentChallenge.nzCompany}</strong>
+            <p className={`text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              NZ Target: <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{currentChallenge.nzCompany}</strong>
             </p>
           </div>
         </div>
 
         {seniorFeedback && (
-          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border ${
             seniorFeedback.grade === "Strong Hire"
-              ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+              ? isDark ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" : "bg-emerald-100 text-emerald-800 border-emerald-300"
               : seniorFeedback.grade === "Hire"
-              ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/40"
-              : "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+              ? isDark ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40" : "bg-indigo-100 text-indigo-800 border-indigo-300"
+              : isDark ? "bg-amber-500/20 text-amber-300 border-amber-500/40" : "bg-amber-100 text-amber-800 border-amber-300"
           }`}>
             {seniorFeedback.grade}
           </span>
@@ -70,15 +78,15 @@ export const SeniorSkillRadar: React.FC<SeniorSkillRadarProps> = ({
         {/* Metric 1: Memory Efficiency */}
         <div className="space-y-1">
           <div className="flex justify-between text-xs">
-            <span className="text-slate-300 flex items-center gap-1.5">
-              <Cpu className="w-3 h-3 text-indigo-400" />
+            <span className={`flex items-center gap-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+              <Cpu className="w-3 h-3 text-indigo-500" />
               Memory & GC (Zero Allocation)
             </span>
-            <span className="font-mono text-indigo-400 font-semibold">{memoryScore}%</span>
+            <span className="font-mono text-indigo-600 font-semibold">{memoryScore}%</span>
           </div>
-          <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+          <div className={`h-1.5 rounded-full overflow-hidden ${isDark ? "bg-slate-800" : "bg-slate-200"}`}>
             <div
-              className="h-full bg-indigo-500 rounded-full transition-all duration-700"
+              className="h-full bg-indigo-600 rounded-full transition-all duration-700"
               style={{ width: `${memoryScore}%` }}
             />
           </div>
@@ -87,13 +95,13 @@ export const SeniorSkillRadar: React.FC<SeniorSkillRadarProps> = ({
         {/* Metric 2: Time Complexity */}
         <div className="space-y-1">
           <div className="flex justify-between text-xs">
-            <span className="text-slate-300 flex items-center gap-1.5">
-              <Clock className="w-3 h-3 text-emerald-400" />
+            <span className={`flex items-center gap-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+              <Clock className="w-3 h-3 text-emerald-500" />
               Time Complexity ({currentChallenge.expectedTimeComplexity})
             </span>
-            <span className="font-mono text-emerald-400 font-semibold">{timeScore}%</span>
+            <span className="font-mono text-emerald-600 font-semibold">{timeScore}%</span>
           </div>
-          <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+          <div className={`h-1.5 rounded-full overflow-hidden ${isDark ? "bg-slate-800" : "bg-slate-200"}`}>
             <div
               className="h-full bg-emerald-500 rounded-full transition-all duration-700"
               style={{ width: `${timeScore}%` }}
@@ -104,13 +112,13 @@ export const SeniorSkillRadar: React.FC<SeniorSkillRadarProps> = ({
         {/* Metric 3: Code Cleanliness */}
         <div className="space-y-1">
           <div className="flex justify-between text-xs">
-            <span className="text-slate-300 flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-amber-400" />
+            <span className={`flex items-center gap-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+              <Sparkles className="w-3 h-3 text-amber-500" />
               C# 12 / .NET 8 Idioms
             </span>
-            <span className="font-mono text-amber-400 font-semibold">{codeCleanlinessScore}%</span>
+            <span className="font-mono text-amber-600 font-semibold">{codeCleanlinessScore}%</span>
           </div>
-          <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+          <div className={`h-1.5 rounded-full overflow-hidden ${isDark ? "bg-slate-800" : "bg-slate-200"}`}>
             <div
               className="h-full bg-amber-500 rounded-full transition-all duration-700"
               style={{ width: `${codeCleanlinessScore}%` }}
@@ -120,10 +128,14 @@ export const SeniorSkillRadar: React.FC<SeniorSkillRadarProps> = ({
       </div>
 
       {/* Quick Access Footer buttons */}
-      <div className="flex items-center justify-between pt-1 border-t border-indigo-500/10 text-xs">
+      <div className={`flex items-center justify-between pt-1 border-t text-xs ${
+        isDark ? "border-indigo-500/10" : "border-slate-200"
+      }`}>
         <button
           onClick={onOpenGuide}
-          className="flex items-center gap-1.5 text-[11px] text-indigo-300 hover:text-white transition-colors"
+          className={`flex items-center gap-1.5 text-[11px] transition-colors ${
+            isDark ? "text-indigo-300 hover:text-white" : "text-indigo-700 hover:text-indigo-900 font-medium"
+          }`}
         >
           <BookOpen className="w-3.5 h-3.5" />
           <span>NZ Interview Handbook</span>
@@ -131,7 +143,11 @@ export const SeniorSkillRadar: React.FC<SeniorSkillRadarProps> = ({
 
         <button
           onClick={onRequestHint}
-          className="flex items-center gap-1 text-[11px] bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 px-2 py-0.5 rounded-lg border border-indigo-500/30 transition-colors"
+          className={`flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg border transition-colors ${
+            isDark 
+              ? "bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border-indigo-500/30" 
+              : "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 font-medium"
+          }`}
         >
           <Sparkles className="w-3 h-3" />
           <span>Get Hint</span>

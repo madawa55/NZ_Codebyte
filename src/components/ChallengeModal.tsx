@@ -16,6 +16,7 @@ interface ChallengeModalProps {
   currentChallengeId: string;
   onSelectChallenge: (c: Challenge) => void;
   solvedChallengeIds: string[];
+  isDark?: boolean;
 }
 
 export const ChallengeModal: React.FC<ChallengeModalProps> = ({
@@ -25,6 +26,7 @@ export const ChallengeModal: React.FC<ChallengeModalProps> = ({
   currentChallengeId,
   onSelectChallenge,
   solvedChallengeIds,
+  isDark = true,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("All");
@@ -50,57 +52,78 @@ export const ChallengeModal: React.FC<ChallengeModalProps> = ({
     return matchesSearch && matchesDifficulty && matchesCompany;
   });
 
-  const difficultyColors = {
+  const difficultyColors = isDark ? {
     Easy: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
     Medium: "bg-amber-500/10 text-amber-400 border-amber-500/20",
     Hard: "bg-red-500/10 text-red-400 border-red-500/20",
     "Senior Specialist": "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
+  } : {
+    Easy: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    Medium: "bg-amber-50 text-amber-700 border-amber-200",
+    Hard: "bg-red-50 text-red-700 border-red-200",
+    "Senior Specialist": "bg-indigo-50 text-indigo-700 border-indigo-200",
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl max-h-[85vh] bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className={`w-full max-w-4xl max-h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border transition-colors ${
+        isDark ? "bg-slate-950 border-slate-800 text-slate-200" : "bg-white border-slate-200 text-slate-800"
+      }`}>
         {/* Modal Header */}
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+        <div className={`p-4 border-b flex items-center justify-between ${
+          isDark ? "bg-slate-900/60 border-slate-800" : "bg-slate-50 border-slate-200"
+        }`}>
           <div>
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
+            <h2 className={`text-base font-bold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-900"}`}>
               <span>NZ Senior C# Algorithm Challenges</span>
-              <span className="text-xs bg-indigo-950 text-indigo-400 border border-indigo-800 px-2 py-0.5 rounded-full font-mono">
+              <span className={`text-xs px-2 py-0.5 rounded-full font-mono border ${
+                isDark ? "bg-indigo-950 text-indigo-400 border-indigo-800" : "bg-indigo-50 text-indigo-700 border-indigo-200 font-semibold"
+              }`}>
                 {challenges.length} Available
               </span>
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
               Curated for senior engineering interviews at Xero, Pushpay, Datacom, Trade Me, and Serko.
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className={`p-1.5 rounded-lg transition-colors ${
+              isDark ? "text-slate-400 hover:text-white hover:bg-slate-800" : "text-slate-500 hover:text-slate-900 hover:bg-slate-200"
+            }`}
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Filters & Search */}
-        <div className="p-4 border-b border-slate-800/80 bg-slate-900/30 flex flex-wrap items-center gap-3">
+        <div className={`p-4 border-b flex flex-wrap items-center gap-3 ${
+          isDark ? "bg-slate-900/30 border-slate-800/80" : "bg-slate-50/50 border-slate-200"
+        }`}>
           <div className="relative flex-1 min-w-[220px]">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search challenges by title, category, or keyword..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              className={`w-full pl-9 pr-3 py-1.5 rounded-xl text-xs border focus:outline-none focus:border-indigo-500 ${
+                isDark 
+                  ? "bg-slate-900 border-slate-800 text-slate-200 placeholder-slate-500" 
+                  : "bg-white border-slate-200 text-slate-900 placeholder-slate-400 shadow-sm"
+              }`}
             />
           </div>
 
           {/* Company Filter */}
           <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-slate-500">Company:</span>
+            <span className={isDark ? "text-slate-500" : "text-slate-500"}>Company:</span>
             <select
               value={selectedCompany}
               onChange={(e) => setSelectedCompany(e.target.value)}
-              className="bg-slate-900 border border-slate-800 text-slate-200 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-indigo-500"
+              className={`rounded-lg px-2.5 py-1 text-xs border focus:outline-none focus:border-indigo-500 ${
+                isDark ? "bg-slate-900 border-slate-800 text-slate-200" : "bg-white border-slate-200 text-slate-800 shadow-sm"
+              }`}
             >
               {companies.map((c) => (
                 <option key={c} value={c}>
@@ -112,11 +135,13 @@ export const ChallengeModal: React.FC<ChallengeModalProps> = ({
 
           {/* Difficulty Filter */}
           <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-slate-500">Difficulty:</span>
+            <span className={isDark ? "text-slate-500" : "text-slate-500"}>Difficulty:</span>
             <select
               value={selectedDifficulty}
               onChange={(e) => setSelectedDifficulty(e.target.value)}
-              className="bg-slate-900 border border-slate-800 text-slate-200 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-indigo-500"
+              className={`rounded-lg px-2.5 py-1 text-xs border focus:outline-none focus:border-indigo-500 ${
+                isDark ? "bg-slate-900 border-slate-800 text-slate-200" : "bg-white border-slate-200 text-slate-800 shadow-sm"
+              }`}
             >
               {difficulties.map((d) => (
                 <option key={d} value={d}>
@@ -130,7 +155,7 @@ export const ChallengeModal: React.FC<ChallengeModalProps> = ({
         {/* Challenge List Grid */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {filteredChallenges.length === 0 ? (
-            <div className="py-12 text-center text-slate-500 text-xs">
+            <div className={`py-12 text-center text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
               No challenges match the current filter.
             </div>
           ) : (
@@ -147,46 +172,50 @@ export const ChallengeModal: React.FC<ChallengeModalProps> = ({
                   }}
                   className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
                     isCurrent
-                      ? "bg-indigo-950/30 border-indigo-500/60 ring-1 ring-indigo-500/30"
-                      : "bg-slate-900/60 border-slate-800/80 hover:bg-slate-900 hover:border-slate-700"
+                      ? isDark 
+                        ? "bg-indigo-950/30 border-indigo-500/60 ring-1 ring-indigo-500/30"
+                        : "bg-indigo-50 border-indigo-300 ring-1 ring-indigo-400/40"
+                      : isDark
+                      ? "bg-slate-900/60 border-slate-800/80 hover:bg-slate-900 hover:border-slate-700"
+                      : "bg-white border-slate-200 hover:bg-slate-50/80 shadow-sm"
                   }`}
                 >
                   <div className="space-y-1.5 flex-1 pr-4">
                     <div className="flex items-center gap-2">
                       {isSolved ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                       ) : (
-                        <div className="w-4 h-4 rounded-full border border-slate-700 shrink-0" />
+                        <div className={`w-4 h-4 rounded-full border shrink-0 ${isDark ? "border-slate-700" : "border-slate-300"}`} />
                       )}
-                      <h3 className="font-semibold text-slate-100 text-sm">{ch.title}</h3>
+                      <h3 className={`font-semibold text-sm ${isDark ? "text-slate-100" : "text-slate-900"}`}>{ch.title}</h3>
                       <span className={`text-[10px] px-2 py-0.2 rounded border font-medium ${difficultyColors[ch.difficulty]}`}>
                         {ch.difficulty}
                       </span>
                     </div>
 
-                    <p className="text-xs text-slate-400 line-clamp-1">
+                    <p className={`text-xs line-clamp-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
                       {ch.shortDescription}
                     </p>
 
-                    <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
-                      <span className="flex items-center gap-1 text-indigo-400">
+                    <div className="flex flex-wrap items-center gap-3 text-[11px]">
+                      <span className="flex items-center gap-1 text-indigo-600 font-medium">
                         <Briefcase className="w-3 h-3" />
                         {ch.nzCompany}
                       </span>
-                      <span className="flex items-center gap-1 text-slate-400">
+                      <span className={`flex items-center gap-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                         <Layers className="w-3 h-3" />
                         {ch.category}
                       </span>
-                      <span className="font-mono text-slate-400">
+                      <span className={`font-mono ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                         Time: {ch.expectedTimeComplexity}
                       </span>
-                      <span className="font-mono text-slate-400">
+                      <span className={`font-mono ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                         Space: {ch.expectedSpaceComplexity}
                       </span>
                     </div>
                   </div>
 
-                  <ChevronRight className="w-4 h-4 text-slate-600 shrink-0" />
+                  <ChevronRight className={`w-4 h-4 shrink-0 ${isDark ? "text-slate-600" : "text-slate-400"}`} />
                 </div>
               );
             })
