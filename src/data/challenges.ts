@@ -1233,7 +1233,7 @@ namespace CodeByte.Challenges
   },
   {
     id: "first-unique-character",
-    title: "First Non-Repeating Character",
+    title: "First Non Repeating Character",
     slug: "first-non-repeating-character",
     difficulty: "Easy",
     category: "Arrays & Hashing",
@@ -1241,182 +1241,195 @@ namespace CodeByte.Challenges
     timeLimitMs: 1000,
     expectedTimeComplexity: "O(N) linear time",
     expectedSpaceComplexity: "O(1) auxiliary (fixed 256 array or hash table)",
-    shortDescription: "Return the first character that appears only once in a string, case-sensitive and with zero LINQ allocations.",
-    description: `Write a C# method that receives a string and returns the first character that appears only once.
+    shortDescription: "Have the function FirstNonRepeating(str) take the str parameter and return the first character that appears only once.",
+    description: `Have the function **FirstNonRepeating(str)** take the \`str\` parameter being passed and return the first character that appears only once in the string.
 
-### Example 1
+For example: if \`str\` is \`"swiss"\` then your program should return the string **\`w\`**. If every character repeats or the string is empty, return the string **\`null\`**.
+
+### Examples
 \`\`\`text
-Input:  "swiss"
-Output: "w"
+Input: "swiss"
+Output: w
 \`\`\`
-
-### Example 2
 \`\`\`text
-Input:  "aabbccde"
-Output: "d"
+Input: "aabbccde"
+Output: d
 \`\`\`
-
-### Example 3
 \`\`\`text
-Input:  "aabb"
+Input: "aabb"
 Output: null
 \`\`\`
 
 ### Requirements
-- **Return the first non-repeating character.**
-- **Case-sensitive:** \`'A'\` and \`'a'\` are treated as different characters.
-- **Return null** if every character is repeated or if the string is empty/null.
+- **Return the first non-repeating character:** Return as a string (or character).
+- **Case-sensitive:** \`'A'\` and \`'a'\` are treated as distinct characters.
+- **Return null** (or \`"null"\`) if every character is repeated or if the string is empty.
 - **Try to avoid LINQ:** Operations like \`.GroupBy()\` or \`.Count()\` allocate intermediate enumerators and perform redundant iterations. Senior interviewers want to see direct, high-performance algorithm control.
 - **Aim for O(N) time complexity:** Avoid O(N²) quadratic nested loops or repeated \`IndexOf\` / \`LastIndexOf\` calls inside loops.
 
-### Method Signature
+### Coderbyte C# Template
 \`\`\`csharp
-public static char? FirstNonRepeatingChar(string s)
+using System;
+
+class MainClass {
+
+  public static string FirstNonRepeating(string str) {
+
+    // code goes here  
+    return str;
+
+  }
+
+  static void Main() {  
+    // keep this function call here
+    Console.WriteLine(FirstNonRepeating(Console.ReadLine()));
+  } 
+
+}
 \`\`\`
 
 ### Senior NZ Interview Focus
-At NZ tech leaders like **Trade Me** and **Xero**, this is a foundational screening question. Interviewers assess:
+At NZ tech employers like **Trade Me**, **Xero**, and **Pushpay**, this standard Coderbyte screening challenge tests:
 1. **Algorithmic Complexity**: Moving from brute-force O(N²) to optimal O(N) using a two-pass frequency count.
 2. **Allocation Efficiency**: Using an \`int[256]\` array for ASCII or a \`Dictionary<char, int>\` rather than expensive LINQ pipelines.
-3. **C# Idiomatic Nullables**: Clean usage of \`char?\` (nullable value type).`,
+3. **Idiomatic Clean Code**: Handling edge cases (empty strings, single characters, repeated characters).`,
     constraints: [
-      "0 <= s.Length <= 100,000",
-      "s can contain ASCII letters, digits, and punctuation.",
+      "0 <= str.Length <= 100,000",
+      "str can contain ASCII letters, digits, and punctuation.",
       "Case-sensitive comparison ('A' != 'a').",
       "Aim for O(N) time complexity.",
       "Avoid LINQ allocations."
     ],
     examples: [
       {
-        input: 's = "swiss"',
-        output: '"w"',
+        input: 'str = "swiss"',
+        output: "w",
         explanation: "'s' appears 3 times, 'w' appears 1 time and is the first non-repeating character."
       },
       {
-        input: 's = "aabbccde"',
-        output: '"d"',
+        input: 'str = "aabbccde"',
+        output: "d",
         explanation: "'a', 'b', and 'c' are repeated. 'd' appears once and precedes 'e'."
       },
       {
-        input: 's = "aabb"',
+        input: 'str = "aabb"',
         output: "null",
         explanation: "Every character in the string is repeated, so the method returns null."
       },
       {
-        input: 's = "Aa"',
-        output: '"A"',
+        input: 'str = "Aa"',
+        output: "A",
         explanation: "Case-sensitive: 'A' and 'a' are distinct characters. 'A' appears first and only once."
       }
     ],
-    nzInterviewContext: "A classic NZ technical screen problem (Trade Me, Xero, Pushpay) testing whether candidates write high-throughput code without falling back to slow LINQ allocations or O(N²) scanning.",
+    nzInterviewContext: "A classic Coderbyte technical assessment problem used across NZ tech leaders (Trade Me, Xero, Pushpay) to verify candidate fundamentals in string traversal, algorithmic efficiency, and avoidance of heavy allocations.",
     seniorEngineeringTips: [
-      "Avoid LINQ queries like s.GroupBy(c => c).First() — they allocate heap objects and have higher constant factors.",
-      "Avoid O(N²) nested loops: calling s.IndexOf(c) == s.LastIndexOf(c) inside a loop causes quadratic time complexity.",
+      "Avoid LINQ queries like str.GroupBy(c => c).First() — they allocate heap objects and have higher constant factors.",
+      "Avoid O(N²) nested loops: calling str.IndexOf(c) == str.LastIndexOf(c) inside a loop causes quadratic time complexity.",
       "For ASCII character sets, an int[256] array provides O(1) direct indexing with zero heap allocations.",
-      "Use char? (nullable value type) to cleanly represent the absent or present character."
+      "Return the character as a string (or null/\"null\" when no unique character exists)."
     ],
     starterCode: `using System;
-using System.Collections.Generic;
 
-namespace CodeByte.Challenges
-{
-    public static class Solution
-    {
-        /// <summary>
-        /// Returns the first character that appears only once in the string.
-        /// Returns null if every character is repeated or if input is empty.
-        /// </summary>
-        /// <param name="s">Input string</param>
-        /// <returns>First non-repeating character or null</returns>
-        public static char? FirstNonRepeatingChar(string s)
-        {
-            // TODO: Return the first non-repeating character in O(N) time without LINQ
-            return null;
-        }
-    }
+class MainClass {
+
+  public static string FirstNonRepeating(string str) {
+
+    // code goes here  
+    return str;
+
+  }
+
+  static void Main() {  
+    // keep this function call here
+    Console.WriteLine(FirstNonRepeating(Console.ReadLine()));
+  } 
+
 }`,
     referenceSolution: `using System;
 using System.Collections.Generic;
 
-namespace CodeByte.Challenges
-{
-    public static class Solution
+class MainClass {
+
+  public static string FirstNonRepeating(string str) {
+    if (string.IsNullOrEmpty(str))
     {
-        public static char? FirstNonRepeatingChar(string s)
-        {
-            if (string.IsNullOrEmpty(s))
-            {
-                return null;
-            }
-
-            // Using fixed-size frequency array for ASCII characters
-            // int[256] provides O(1) direct indexing with zero heap allocation churn
-            int[] charCounts = new int[256];
-
-            // Pass 1: Tally character frequencies in O(N)
-            for (int i = 0; i < s.Length; i++)
-            {
-                char c = s[i];
-                if (c < 256)
-                {
-                    charCounts[c]++;
-                }
-            }
-
-            // Pass 2: Identify the first character with a frequency of exactly 1
-            for (int i = 0; i < s.Length; i++)
-            {
-                char c = s[i];
-                if (c < 256 && charCounts[c] == 1)
-                {
-                    return c;
-                }
-            }
-
-            return null;
-        }
+      return "null";
     }
+
+    // Using fixed-size frequency array for ASCII characters
+    // int[256] provides O(1) direct indexing with zero heap allocation churn
+    int[] charCounts = new int[256];
+
+    // Pass 1: Tally character frequencies in O(N)
+    for (int i = 0; i < str.Length; i++)
+    {
+      char c = str[i];
+      if (c < 256)
+      {
+        charCounts[c]++;
+      }
+    }
+
+    // Pass 2: Identify the first character with a frequency of exactly 1
+    for (int i = 0; i < str.Length; i++)
+    {
+      char c = str[i];
+      if (c < 256 && charCounts[c] == 1)
+      {
+        return c.ToString();
+      }
+    }
+
+    return "null";
+  }
+
+  static void Main() {  
+    // keep this function call here
+    Console.WriteLine(FirstNonRepeating(Console.ReadLine()));
+  } 
+
 }`,
-    solutionExplanation: "Using a two-pass algorithm: Pass 1 tallies character frequencies in O(N) time with an int[256] lookup array (or Dictionary<char, int> for arbitrary Unicode). Pass 2 scans the original string left-to-right to find the first character with a count of 1. This guarantees O(N) time, O(1) auxiliary space, and zero LINQ heap allocations.",
+    solutionExplanation: "Using a two-pass algorithm matching Coderbyte's standard pattern: Pass 1 tallies character frequencies in O(N) time with an int[256] lookup array (or Dictionary<char, int> for arbitrary Unicode). Pass 2 scans the original string left-to-right to find the first character with a count of 1. This guarantees O(N) time, O(1) auxiliary space, and zero LINQ heap allocations.",
     testCases: [
       {
         id: "fnr-1",
-        inputDisplay: 's = "swiss"',
+        inputDisplay: 'str = "swiss"',
         input: "swiss",
         expected: "w",
         explanation: "'s' repeats 3 times, 'w' appears once and is first"
       },
       {
         id: "fnr-2",
-        inputDisplay: 's = "aabbccde"',
+        inputDisplay: 'str = "aabbccde"',
         input: "aabbccde",
         expected: "d",
         explanation: "'d' appears once and before 'e'"
       },
       {
         id: "fnr-3",
-        inputDisplay: 's = "aabb"',
+        inputDisplay: 'str = "aabb"',
         input: "aabb",
         expected: "null",
         explanation: "All characters repeat, so returns null"
       },
       {
         id: "fnr-4",
-        inputDisplay: 's = "Aa"',
+        inputDisplay: 'str = "Aa"',
         input: "Aa",
         expected: "A",
         explanation: "Case-sensitive: 'A' and 'a' are distinct characters"
       },
       {
         id: "fnr-5",
-        inputDisplay: 's = "z"',
+        inputDisplay: 'str = "z"',
         input: "z",
         expected: "z",
         explanation: "Single character string"
       },
       {
         id: "fnr-6-hidden",
-        inputDisplay: 's = "" (empty string)',
+        inputDisplay: 'str = "" (empty string)',
         input: "",
         expected: "null",
         isHidden: true,
@@ -1424,7 +1437,7 @@ namespace CodeByte.Challenges
       },
       {
         id: "fnr-7-hidden",
-        inputDisplay: 's = "trade-me-marketplace"',
+        inputDisplay: 'str = "trade-me-marketplace"',
         input: "trade-me-marketplace",
         expected: "d",
         isHidden: true,
@@ -1432,9 +1445,9 @@ namespace CodeByte.Challenges
       }
     ],
     hints: {
-      level1: "Think about counting character frequencies first. How can you store how many times each character appears in a single pass?",
-      level2: "After tallying frequencies in an array or dictionary, iterate through the string a second time from left to right. The first character with count == 1 is your answer.",
-      level3: "Avoid LINQ like .GroupBy(). Instead, use an int[256] array for ASCII strings: int[] freq = new int[256]; for (int i = 0; i < s.Length; i++) freq[s[i]]++; Then scan s again and return s[i] where freq[s[i]] == 1."
+      level1: "In Coderbyte, you can count the frequencies of each character first. An int[256] array is ideal for ASCII strings.",
+      level2: "After tallying frequencies, loop through the original string from index 0 to str.Length - 1. Return the first character whose count is 1.",
+      level3: "Avoid LINQ. Use: int[] freq = new int[256]; for (int i = 0; i < str.Length; i++) freq[str[i]]++; for (int i = 0; i < str.Length; i++) if (freq[str[i]] == 1) return str[i].ToString(); return \"null\";"
     }
   }
 ];

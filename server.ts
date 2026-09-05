@@ -116,15 +116,21 @@ function evaluateCsharpLocally(
     (code.includes("bool[] result = new bool[requestTimestamps.Length];") && code.includes("return result;") && !code.includes("Queue")) ||
     (code.includes("return Array.Empty<int>();") && !code.includes("queue") && !code.includes("Queue")) ||
     (code.includes("return 0;") && !code.includes("prefix") && !code.includes("left") && !code.includes("map")) ||
-    (code.includes("FirstNonRepeatingChar") && code.includes("return null;") && !code.includes("for") && !code.includes("while") && !code.includes("Dictionary") && !code.includes("charCounts") && !code.includes("freq"));
+    (code.includes("// code goes here") && code.includes("return str;")) ||
+    (code.includes("FirstNonRepeating") && code.includes("return str;") && !code.includes("for") && !code.includes("while") && !code.includes("Dictionary") && !code.includes("charCounts") && !code.includes("freq")) ||
+    (code.includes("FirstNonRepeating") && code.includes("return null;") && !code.includes("for") && !code.includes("while") && !code.includes("Dictionary") && !code.includes("charCounts") && !code.includes("freq"));
 
   const results = (testCases || []).map((tc: any, index: number) => {
     let passed = false;
     let actualValue = "";
 
     if (isStarterBoilerplate) {
-      // Starter boilerplate returns default empty / 0 / null values
-      actualValue = tc.expected === "0" || tc.expected === "[]" || tc.expected === "null" ? String(tc.expected) : "null";
+      // Starter boilerplate returns default empty / 0 / null / str values
+      if (code.includes("return str;")) {
+        actualValue = tc.input !== undefined ? String(tc.input) : "str";
+      } else {
+        actualValue = tc.expected === "0" || tc.expected === "[]" || tc.expected === "null" ? String(tc.expected) : "null";
+      }
       passed = actualValue === String(tc.expected);
     } else {
       // User has written custom logic: evaluate based on algorithmic patterns
