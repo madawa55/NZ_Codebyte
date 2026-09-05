@@ -75,15 +75,15 @@ export const ChallengeModal: React.FC<ChallengeModalProps> = ({
         }`}>
           <div>
             <h2 className={`text-base font-bold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-900"}`}>
-              <span>NZ Senior C# Algorithm Challenges</span>
+              <span>Codebyte C# Challenges Catalog</span>
               <span className={`text-xs px-2 py-0.5 rounded-full font-mono border ${
                 isDark ? "bg-indigo-950 text-indigo-400 border-indigo-800" : "bg-indigo-50 text-indigo-700 border-indigo-200 font-semibold"
               }`}>
-                {challenges.length} Available
+                {challenges.length} Challenges
               </span>
             </h2>
             <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-              Curated for senior engineering interviews at Xero, Pushpay, Datacom, Trade Me, and Serko.
+              Curated authentic Coderbyte algorithmic assessment challenges with test runners and senior technical reviews.
             </p>
           </div>
           <button
