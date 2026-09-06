@@ -127,6 +127,16 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             <ListOrdered className={`w-3.5 h-3.5 ${isDark ? "text-slate-400" : "text-slate-500"}`} />
+            {currentChallenge.level && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-bold border ${
+                currentChallenge.level === 1 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" :
+                currentChallenge.level === 2 ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/30" :
+                currentChallenge.level === 3 ? "bg-amber-500/10 text-amber-400 border-amber-500/30" :
+                "bg-rose-500/10 text-rose-400 border-rose-500/30"
+              }`}>
+                L{currentChallenge.level}
+              </span>
+            )}
             <span className="max-w-[130px] sm:max-w-[210px] md:max-w-[280px] truncate font-medium">
               {currentChallenge.title}
             </span>

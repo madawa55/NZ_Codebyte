@@ -1,8 +1,12 @@
 export type Difficulty = "Easy" | "Medium" | "Hard" | "Senior Specialist";
 
 export type ChallengeCategory = 
+  | "Strings & Manipulation"
+  | "Arrays & Collections"
   | "Arrays & Hashing" 
   | "Two Pointers & Sliding Window" 
+  | "Stack & Recursion"
+  | "LINQ & Data Processing"
   | "Span<T> & Zero-Allocation" 
   | "Graphs & Topological Sort" 
   | "Concurrency & Rate Limiting" 
@@ -23,9 +27,11 @@ export interface Challenge {
   id: string;
   title: string;
   slug: string;
+  level?: 1 | 2 | 3 | 4;
+  levelName?: string;
   difficulty: Difficulty;
   category: ChallengeCategory;
-  nzCompany: string; // e.g. "Xero", "Pushpay", "Trade Me", "Datacom", "Serko"
+  nzCompany: string; // e.g. "Partly", "Xero", "Pushpay", "Trade Me", "Seequent", "Datacom"
   timeLimitMs: number;
   expectedTimeComplexity: string;
   expectedSpaceComplexity: string;

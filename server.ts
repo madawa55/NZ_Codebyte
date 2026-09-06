@@ -39,12 +39,230 @@ const REFERENCE_SOLVERS: Record<string, (input: any) => string | number> = {
   "Find Intersection": (input: any) => {
     const strArr = Array.isArray(input) ? input : [input];
     if (!strArr || strArr.length < 2) return "false";
-    const set1 = new Set(strArr[0].split(", ").map((s: string) => s.trim()));
+    const set1 = new Set(strArr[0].split(",").map((s: string) => s.trim()));
     const common: string[] = [];
-    for (const n of strArr[1].split(", ").map((s: string) => s.trim())) {
+    for (const n of strArr[1].split(",").map((s: string) => s.trim())) {
       if (set1.has(n)) common.push(n);
     }
     return common.length > 0 ? common.join(",") : "false";
+  },
+  "First Non-Repeating Character": (input: any) => {
+    const str = String(input);
+    const counts: Record<string, number> = {};
+    for (const c of str) counts[c] = (counts[c] || 0) + 1;
+    for (const c of str) {
+      if (counts[c] === 1) return c;
+    }
+    return "";
+  },
+  "Reverse a String": (input: any) => {
+    const str = String(input);
+    const chars = str.split("");
+    let left = 0, right = chars.length - 1;
+    while (left < right) {
+      const t = chars[left];
+      chars[left] = chars[right];
+      chars[right] = t;
+      left++;
+      right--;
+    }
+    return chars.join("");
+  },
+  "Palindrome Checker": (input: any) => {
+    const str = String(input).replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+    let left = 0, right = str.length - 1;
+    while (left < right) {
+      if (str[left] !== str[right]) return "false";
+      left++;
+      right--;
+    }
+    return "true";
+  },
+  "Count Character Frequency": (input: any) => {
+    const str = String(input);
+    const counts: Record<string, number> = {};
+    const order: string[] = [];
+    for (const c of str) {
+      if (!counts[c]) {
+        counts[c] = 0;
+        order.push(c);
+      }
+      counts[c]++;
+    }
+    return order.map((c) => `${c}:${counts[c]}`).join(", ");
+  },
+  "Find the Missing Number": (input: any) => {
+    const arr = Array.isArray(input) ? input : [];
+    const n = arr.length + 1;
+    const expectedSum = (n * (n + 1)) / 2;
+    const actualSum = arr.reduce((acc: number, x: any) => acc + Number(x), 0);
+    return expectedSum - actualSum;
+  },
+  "Find Duplicate Numbers": (input: any) => {
+    const arr = Array.isArray(input) ? input : [];
+    const seen = new Set<number>();
+    const duplicates = new Set<number>();
+    for (const x of arr) {
+      const num = Number(x);
+      if (seen.has(num)) duplicates.add(num);
+      else seen.add(num);
+    }
+    if (duplicates.size === 0) return "none";
+    const sorted = Array.from(duplicates).sort((a, b) => a - b);
+    return sorted.join(", ");
+  },
+  "Two Sum": (input: any) => {
+    const strArr = Array.isArray(input) ? input : [input];
+    if (strArr.length < 2) return "[]";
+    const nums = String(strArr[0]).split(",").map((s) => Number(s.trim()));
+    const target = Number(String(strArr[1]).trim());
+    const map = new Map<number, number>();
+    for (let i = 0; i < nums.length; i++) {
+      const complement = target - nums[i];
+      if (map.has(complement)) {
+        return `[${map.get(complement)}, ${i}]`;
+      }
+      if (!map.has(nums[i])) map.set(nums[i], i);
+    }
+    return "[]";
+  },
+  "Find Largest and Smallest Number": (input: any) => {
+    const arr = Array.isArray(input) ? input : [];
+    if (arr.length === 0) return "Min = 0, Max = 0";
+    let min = Number(arr[0]), max = Number(arr[0]);
+    for (let i = 1; i < arr.length; i++) {
+      const val = Number(arr[i]);
+      if (val < min) min = val;
+      if (val > max) max = val;
+    }
+    return `Min = ${min}, Max = ${max}`;
+  },
+  "Remove Duplicates": (input: any) => {
+    const arr = Array.isArray(input) ? input : [];
+    const seen = new Set<number>();
+    const res: number[] = [];
+    for (const x of arr) {
+      const num = Number(x);
+      if (!seen.has(num)) {
+        seen.add(num);
+        res.push(num);
+      }
+    }
+    return res.join(", ");
+  },
+  "Anagram Checker": (input: any) => {
+    const strArr = Array.isArray(input) ? input : [input];
+    if (strArr.length < 2) return "false";
+    const s1 = String(strArr[0]).toLowerCase().replace(/[^a-z0-9]/g, "");
+    const s2 = String(strArr[1]).toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (s1.length !== s2.length) return "false";
+    const count: Record<string, number> = {};
+    for (const c of s1) count[c] = (count[c] || 0) + 1;
+    for (const c of s2) {
+      if (!count[c]) return "false";
+      count[c]--;
+    }
+    return "true";
+  },
+  "Compress a String": (input: any) => {
+    const str = String(input);
+    if (!str) return "";
+    let res = "";
+    let i = 0;
+    while (i < str.length) {
+      const c = str[i];
+      let cnt = 0;
+      while (i < str.length && str[i] === c) {
+        cnt++;
+        i++;
+      }
+      res += c + cnt;
+    }
+    return res;
+  },
+  "Find the Longest Substring Without Repeating Characters": (input: any) => {
+    const str = String(input);
+    const lastIndex = new Map<string, number>();
+    let maxLen = 0, left = 0;
+    for (let right = 0; right < str.length; right++) {
+      const c = str[right];
+      if (lastIndex.has(c) && (lastIndex.get(c) as number) >= left) {
+        left = (lastIndex.get(c) as number) + 1;
+      }
+      lastIndex.set(c, right);
+      maxLen = Math.max(maxLen, right - left + 1);
+    }
+    return maxLen;
+  },
+  "LINQ Group By": (input: any) => {
+    const records = Array.isArray(input) ? input : [];
+    const deptMaxSalary: Record<string, number> = {};
+    const deptMaxPerson: Record<string, string> = {};
+    for (const r of records) {
+      const [name, dept, sal] = String(r).split(":").map((s) => s.trim());
+      const salary = Number(sal);
+      if (deptMaxSalary[dept] === undefined || salary > deptMaxSalary[dept]) {
+        deptMaxSalary[dept] = salary;
+        deptMaxPerson[dept] = name;
+      }
+    }
+    const depts = Object.keys(deptMaxSalary).sort();
+    return depts.map((d) => `${d} -> ${deptMaxPerson[d]}`).join(", ");
+  },
+  "Find the Second Highest Salary": (input: any) => {
+    const records = Array.isArray(input) ? input : [];
+    const salaries = new Set<number>();
+    for (const r of records) {
+      const parts = String(r).split(":");
+      if (parts.length >= 2) salaries.add(Number(parts[1].trim()));
+    }
+    if (salaries.size < 2) return -1;
+    const sorted = Array.from(salaries).sort((a, b) => a - b);
+    return sorted[sorted.length - 2];
+  },
+  "Merge Two Sorted Arrays": (input: any) => {
+    const strArr = Array.isArray(input) ? input : [input];
+    if (strArr.length < 2) return "";
+    const a1 = String(strArr[0]).split(",").map((s) => Number(s.trim()));
+    const a2 = String(strArr[1]).split(",").map((s) => Number(s.trim()));
+    const res: number[] = [];
+    let i = 0, j = 0;
+    while (i < a1.length && j < a2.length) {
+      if (a1[i] <= a2[j]) {
+        res.push(a1[i++]);
+      } else {
+        res.push(a2[j++]);
+      }
+    }
+    while (i < a1.length) res.push(a1[i++]);
+    while (j < a2.length) res.push(a2[j++]);
+    return res.join(", ");
+  },
+  "Implement an LRU Cache": (input: any) => {
+    const strArr = Array.isArray(input) ? input : [];
+    const cache: string[] = [];
+    for (const item of strArr) {
+      const idx = cache.indexOf(item);
+      if (idx !== -1) cache.splice(idx, 1);
+      else if (cache.length >= 5) cache.shift();
+      cache.push(item);
+    }
+    return cache.join("-");
+  },
+  "Process API Transactions": (input: any) => {
+    const txs = Array.isArray(input) ? input : [];
+    const userTotals: Record<string, number> = {};
+    for (const t of txs) {
+      const [, userId, amt, status, daysAgo] = String(t).split(":").map((s) => s.trim());
+      if (status === "SUCCESS" && Number(daysAgo) <= 30) {
+        userTotals[userId] = (userTotals[userId] || 0) + Number(amt);
+      }
+    }
+    const users = Object.keys(userTotals).sort((a, b) => {
+      const diff = userTotals[b] - userTotals[a];
+      return diff !== 0 ? diff : a.localeCompare(b);
+    });
+    return users.slice(0, 3).map((u) => `${u}: $${userTotals[u]}`).join(", ");
   },
   "Questions Marks": (input: any) => {
     const str = String(input);
@@ -358,6 +576,51 @@ if (!(Array.prototype as any).Contains) {
   (Array.prototype as any).Min = function () {
     return Math.min(...this);
   };
+  (Array.prototype as any).Sort = function (compareFn?: any) {
+    if (typeof compareFn === "function") return this.sort(compareFn);
+    return this.sort((a: any, b: any) => {
+      if (typeof a === "number" && typeof b === "number") return a - b;
+      return String(a).localeCompare(String(b));
+    });
+  };
+  (Array.prototype as any).OrderBy = function (fn?: any) {
+    return [...this].sort((a, b) => {
+      const va = fn ? fn(a) : a, vb = fn ? fn(b) : b;
+      if (typeof va === "number" && typeof vb === "number") return va - vb;
+      return String(va).localeCompare(String(vb));
+    });
+  };
+  (Array.prototype as any).OrderByDescending = function (fn?: any) {
+    return [...this].sort((a, b) => {
+      const va = fn ? fn(a) : a, vb = fn ? fn(b) : b;
+      if (typeof va === "number" && typeof vb === "number") return vb - va;
+      return String(vb).localeCompare(String(va));
+    });
+  };
+  (Array.prototype as any).Distinct = function () {
+    return Array.from(new Set(this));
+  };
+  (Array.prototype as any).Skip = function (n: number) {
+    return this.slice(n);
+  };
+  (Array.prototype as any).Take = function (n: number) {
+    return this.slice(0, n);
+  };
+  (Array.prototype as any).First = function (predicate?: any) {
+    return predicate ? this.find(predicate) : this[0];
+  };
+  (Array.prototype as any).FirstOrDefault = function (predicate?: any) {
+    return predicate ? (this.find(predicate) ?? null) : (this[0] ?? null);
+  };
+  (Array.prototype as any).Where = function (predicate: any) {
+    return this.filter(predicate);
+  };
+  (Array.prototype as any).Select = function (fn: any) {
+    return this.map(fn);
+  };
+  (Array.prototype as any).Sum = function (fn?: any) {
+    return this.reduce((acc: number, x: any) => acc + (fn ? fn(x) : Number(x) || 0), 0);
+  };
 }
 
 if (!(String.prototype as any).Contains) {
@@ -460,6 +723,7 @@ function transpileCsharpToJs(code: string): string {
   js = js.replace(/\.Count\b/g, ".length");
 
   // 11. Common methods with parameter options
+  js = js.replace(/\.ToString\(\)/g, ".toString()");
   js = js.replace(/\.Split\(([^;]+?),\s*StringSplitOptions\.TrimEntries\s*\)/g, ".split($1).map(s => s.trim())");
   js = js.replace(/\.Split\(([^;]+?),\s*StringSplitOptions\.RemoveEmptyEntries\s*\)/g, ".split($1).filter(Boolean)");
   js = js.replace(/\.Split\(/g, ".split(");
@@ -495,6 +759,22 @@ function executeCsharpInSandbox(
           list.push(...Array.from(init));
         }
       }
+      (list as any).Add = function (x: any) { list.push(x); return list; };
+      (list as any).Remove = function (x: any) {
+        const idx = list.indexOf(x);
+        if (idx !== -1) { list.splice(idx, 1); return true; }
+        return false;
+      };
+      (list as any).RemoveAt = function (i: number) { list.splice(i, 1); };
+      (list as any).Contains = function (x: any) { return list.includes(x); };
+      (list as any).Sort = function (compareFn?: any) {
+        if (typeof compareFn === "function") return list.sort(compareFn);
+        return list.sort((a, b) => {
+          if (typeof a === "number" && typeof b === "number") return a - b;
+          return String(a).localeCompare(String(b));
+        });
+      };
+      Object.defineProperty(list, "Count", { get() { return list.length; }, configurable: true });
       return list;
     };
 
@@ -506,11 +786,15 @@ function executeCsharpInSandbox(
           for (const item of init) s.add(item);
         }
       }
-      (s as any).Add = function (item: any) { s.add(item); return s; };
-      (s as any).add = function (item: any) { s.add(item); return s; };
-      (s as any).Contains = function (item: any) { return s.has(item); };
-      (s as any).contains = function (item: any) { return s.has(item); };
-      (s as any).Remove = function (item: any) { return s.delete(item); };
+      const origAdd = s.add.bind(s);
+      const origHas = s.has.bind(s);
+      const origDel = s.delete.bind(s);
+      (s as any).Add = function (item: any) { origAdd(item); return s; };
+      (s as any).Contains = function (item: any) { return origHas(item); };
+      (s as any).contains = function (item: any) { return origHas(item); };
+      (s as any).Remove = function (item: any) { return origDel(item); };
+      Object.defineProperty(s, "Count", { get() { return s.size; }, configurable: true });
+      Object.defineProperty(s, "length", { get() { return s.size; }, configurable: true });
       return s;
     };
 
@@ -705,6 +989,64 @@ function executeCsharpInSandbox(
       }
       if (!_aProto.Min) {
         _aProto.Min = function() { return Math.min(...this); };
+      }
+      if (!_aProto.Sort) {
+        _aProto.Sort = function(compareFn) {
+          if (typeof compareFn === "function") return this.sort(compareFn);
+          return this.sort((a, b) => {
+            if (typeof a === "number" && typeof b === "number") return a - b;
+            return String(a).localeCompare(String(b));
+          });
+        };
+      }
+      if (!_aProto.OrderBy) {
+        _aProto.OrderBy = function(fn) {
+          return [...this].sort((a, b) => {
+            const va = fn ? fn(a) : a, vb = fn ? fn(b) : b;
+            if (typeof va === "number" && typeof vb === "number") return va - vb;
+            return String(va).localeCompare(String(vb));
+          });
+        };
+      }
+      if (!_aProto.OrderByDescending) {
+        _aProto.OrderByDescending = function(fn) {
+          return [...this].sort((a, b) => {
+            const va = fn ? fn(a) : a, vb = fn ? fn(b) : b;
+            if (typeof va === "number" && typeof vb === "number") return vb - va;
+            return String(vb).localeCompare(String(va));
+          });
+        };
+      }
+      if (!_aProto.Distinct) {
+        _aProto.Distinct = function() { return Array.from(new Set(this)); };
+      }
+      if (!_aProto.Skip) {
+        _aProto.Skip = function(n) { return this.slice(n); };
+      }
+      if (!_aProto.Take) {
+        _aProto.Take = function(n) { return this.slice(0, n); };
+      }
+      if (!_aProto.First) {
+        _aProto.First = function(predicate) { return predicate ? this.find(predicate) : this[0]; };
+      }
+      if (!_aProto.FirstOrDefault) {
+        _aProto.FirstOrDefault = function(predicate) { return predicate ? (this.find(predicate) ?? null) : (this[0] ?? null); };
+      }
+      if (!_aProto.Where) {
+        _aProto.Where = function(predicate) { return this.filter(predicate); };
+      }
+      if (!_aProto.Select) {
+        _aProto.Select = function(fn) { return this.map(fn); };
+      }
+      if (!_aProto.Sum) {
+        _aProto.Sum = function(fn) { return this.reduce((acc, x) => acc + (fn ? fn(x) : Number(x) || 0), 0); };
+      }
+      if (!_sProto.CompareTo) {
+        _sProto.CompareTo = function(other) { return this.localeCompare(String(other)); };
+      }
+      const _nProto = (0).constructor.prototype;
+      if (!_nProto.CompareTo) {
+        _nProto.CompareTo = function(other) { return this - Number(other); };
       }
     `;
 

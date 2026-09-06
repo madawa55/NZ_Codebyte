@@ -29,11 +29,13 @@ export const ChallengeModal: React.FC<ChallengeModalProps> = ({
   isDark = true,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedLevel, setSelectedLevel] = useState<string>("All");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("All");
   const [selectedCompany, setSelectedCompany] = useState<string>("All");
 
   if (!isOpen) return null;
 
+  const levels = ["All", "Level 1", "Level 2", "Level 3", "Level 4"];
   const companies = ["All", ...Array.from(new Set(challenges.map((c) => c.nzCompany)))];
   const difficulties = ["All", ...Array.from(new Set(challenges.map((c) => c.difficulty)))];
 
@@ -43,13 +45,17 @@ export const ChallengeModal: React.FC<ChallengeModalProps> = ({
       c.shortDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.category.toLowerCase().includes(searchTerm.toLowerCase());
 
+    const matchesLevel =
+      selectedLevel === "All" ||
+      (c.level && `Level ${c.level}` === selectedLevel);
+
     const matchesDifficulty =
       selectedDifficulty === "All" || c.difficulty === selectedDifficulty;
 
     const matchesCompany =
       selectedCompany === "All" || c.nzCompany === selectedCompany;
 
-    return matchesSearch && matchesDifficulty && matchesCompany;
+    return matchesSearch && matchesLevel && matchesDifficulty && matchesCompany;
   });
 
   const difficultyColors = isDark ? {
@@ -113,6 +119,27 @@ export const ChallengeModal: React.FC<ChallengeModalProps> = ({
                   : "bg-white border-slate-200 text-slate-900 placeholder-slate-400 shadow-sm"
               }`}
             />
+          </div>
+
+          {/* Level Filter */}
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className={isDark ? "text-slate-500" : "text-slate-500"}>Level:</span>
+            <select
+              value={selectedLevel}
+              onChange={(e) => setSelectedLevel(e.target.value)}
+              className={`rounded-lg px-2.5 py-1 text-xs border focus:outline-none focus:border-indigo-500 ${
+                isDark ? "bg-slate-900 border-slate-800 text-slate-200" : "bg-white border-slate-200 text-slate-800 shadow-sm"
+              }`}
+            >
+              {levels.map((l) => (
+                <option key={l} value={l}>
+                  {l === "Level 1" ? "🟢 Level 1: Fundamentals" :
+                   l === "Level 2" ? "🟡 Level 2: Arrays & Colls" :
+                   l === "Level 3" ? "🟠 Level 3: Strings & Algos" :
+                   l === "Level 4" ? "🔴 Level 4: Senior .NET" : "All Levels"}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Company Filter */}
@@ -188,6 +215,16 @@ export const ChallengeModal: React.FC<ChallengeModalProps> = ({
                         <div className={`w-4 h-4 rounded-full border shrink-0 ${isDark ? "border-slate-700" : "border-slate-300"}`} />
                       )}
                       <h3 className={`font-semibold text-sm ${isDark ? "text-slate-100" : "text-slate-900"}`}>{ch.title}</h3>
+                      {ch.level && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-bold border ${
+                          ch.level === 1 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" :
+                          ch.level === 2 ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/30" :
+                          ch.level === 3 ? "bg-amber-500/10 text-amber-400 border-amber-500/30" :
+                          "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                        }`}>
+                          L{ch.level}
+                        </span>
+                      )}
                       <span className={`text-[10px] px-2 py-0.2 rounded border font-medium ${difficultyColors[ch.difficulty]}`}>
                         {ch.difficulty}
                       </span>
