@@ -332,9 +332,149 @@ function validateCsharpSyntax(code: string): RoslynDiagnostic[] {
   return diagnostics;
 }
 
+// Attach polyfills to Host Array and String prototypes to support objects passed across VM realms
+if (!(Array.prototype as any).Contains) {
+  (Array.prototype as any).Contains = function (x: any) {
+    return this.includes(x);
+  };
+  (Array.prototype as any).Add = function (x: any) {
+    this.push(x);
+    return this;
+  };
+  (Array.prototype as any).Remove = function (x: any) {
+    const idx = this.indexOf(x);
+    if (idx !== -1) {
+      this.splice(idx, 1);
+      return true;
+    }
+    return false;
+  };
+  (Array.prototype as any).RemoveAt = function (i: number) {
+    this.splice(i, 1);
+  };
+  (Array.prototype as any).Max = function () {
+    return Math.max(...this);
+  };
+  (Array.prototype as any).Min = function () {
+    return Math.min(...this);
+  };
+}
+
+if (!(String.prototype as any).Contains) {
+  (String.prototype as any).Contains = function (sub: string) {
+    return this.includes(sub);
+  };
+  (String.prototype as any).Trim = function (...chars: string[]) {
+    if (!chars || chars.length === 0) return this.trim();
+    let res: string = this;
+    for (const ch of chars) {
+      while (res.startsWith(ch)) res = res.slice(ch.length);
+      while (res.endsWith(ch)) res = res.slice(0, -ch.length);
+    }
+    return res.trim();
+  };
+  (String.prototype as any).ToCharArray = function () {
+    return this.split("");
+  };
+  (String.prototype as any).Substring = function (start: number, len?: number) {
+    return len !== undefined ? this.substr(start, len) : this.substring(start);
+  };
+  (String.prototype as any).ToLower = function () {
+    return this.toLowerCase();
+  };
+  (String.prototype as any).ToUpper = function () {
+    return this.toUpperCase();
+  };
+}
+
 // ----------------------------------------------------
 // C# CODE TRANSPILER & SANDBOX EXECUTION ENGINE
 // ----------------------------------------------------
+function transpileCsharpToJs(code: string): string {
+  let js = code;
+
+  // 1. Remove usings
+  js = js.replace(/using\s+[\w\.]+;/g, "");
+
+  // 2. Remove static void Main method with brace counting
+  const mainIdx = js.search(/(?:public|private)?\s*static\s+void\s+Main\s*\([^)]*\)\s*\{/);
+  if (mainIdx !== -1) {
+    const braceStart = js.indexOf("{", mainIdx);
+    if (braceStart !== -1) {
+      let depth = 1;
+      let i = braceStart + 1;
+      while (i < js.length && depth > 0) {
+        if (js[i] === "{") depth++;
+        else if (js[i] === "}") depth--;
+        i++;
+      }
+      js = js.slice(0, mainIdx) + js.slice(i);
+    }
+  }
+
+  // 3. Remove outer class wrapper cleanly
+  const classMatch = js.match(/class\s+\w+(?:\s*:\s*\w+)?\s*\{/);
+  if (classMatch && classMatch.index !== undefined) {
+    const braceStart = js.indexOf("{", classMatch.index);
+    const lastBrace = js.lastIndexOf("}");
+    if (braceStart !== -1 && lastBrace !== -1 && lastBrace > braceStart) {
+      js = js.slice(0, classMatch.index) + js.slice(braceStart + 1, lastBrace) + js.slice(lastBrace + 1);
+    }
+  }
+
+  // 4. Convert foreach loops FIRST to prevent matching as function declarations
+  js = js.replace(/foreach\s*\(\s*(?:var|string|int|char|long|bool|double|float)\s+(\w+)\s+in\s+([^)]+)\)/g, "for (const $1 of $2)");
+
+  // 5. Convert method signatures (static/non-static, public/private/etc.)
+  js = js.replace(/(?:public|private|protected|internal)?\s*(?:static\s+)?[\w<>\[\],\s]+\s+(\w+)\s*\(([^)]*)\)\s*\{/g, (_m, name, paramStr) => {
+    if (name === "for" || name === "if" || name === "while" || name === "switch" || name === "foreach") return _m;
+    const cleanParams = paramStr
+      .split(",")
+      .map((p: string) => p.trim().split(/\s+/).pop())
+      .filter(Boolean)
+      .join(", ");
+    return `function ${name}(${cleanParams}) {`;
+  });
+
+  // 6. Strip type casts: (int)x, (long)x, (char)x, (double)x, (float)x
+  js = js.replace(/\((?:int|long|double|float|char|byte|short)\)\s*([a-zA-Z0-9_\(\[\.])/g, "$1");
+
+  // 7. Variable declarations
+  js = js.replace(/\b(?:const\s+)?(?:int|string|bool|double|float|long|var|char|byte|short)\s+(\w+)\s*=/g, "let $1 =");
+  js = js.replace(/\b(?:const\s+)?(?:int|string|bool|double|float|long|char|byte|short)\s*\[\]\s+(\w+)\s*=/g, "let $1 =");
+  js = js.replace(/\b(?:List<[^>]+>|HashSet<[^>]+>|Dictionary<[^>]+>|StringBuilder|Queue<[^>]+>|Stack<[^>]+>)\s+(\w+)\s*=/g, "let $1 =");
+  js = js.replace(/\b(?:int|string|bool|double|float|long|char)\s+(\w+)\s*;/g, "let $1;");
+
+  // 8. Array initializations: new string[] { ... } -> [ ... ]
+  js = js.replace(/new\s+(?:int|string|bool|char)\s*\[\s*\]\s*\{([^}]+)\}/g, "[$1]");
+  js = js.replace(/new\s*\[\s*\]\s*\{([^}]+)\}/g, "[$1]");
+
+  // 9. Collections & objects
+  js = js.replace(/new\s+List<[^>]+>\s*\(([^)]*)\)/g, "createList($1)");
+  js = js.replace(/new\s+HashSet<[^>]+>\s*\(([^)]*)\)/g, "createSet($1)");
+  js = js.replace(/new\s+Dictionary<[^>]+>\s*\(([^)]*)\)/g, "createDictionary()");
+  js = js.replace(/new\s+string\s*\(([^)]+)\)/g, "createString($1)");
+
+  // 10. Property names: .Length -> .length, .Count -> .length
+  js = js.replace(/\.Length\b/g, ".length");
+  js = js.replace(/\.Count\b/g, ".length");
+
+  // 11. Common methods with parameter options
+  js = js.replace(/\.Split\(([^;]+?),\s*StringSplitOptions\.TrimEntries\s*\)/g, ".split($1).map(s => s.trim())");
+  js = js.replace(/\.Split\(([^;]+?),\s*StringSplitOptions\.RemoveEmptyEntries\s*\)/g, ".split($1).filter(Boolean)");
+  js = js.replace(/\.Split\(/g, ".split(");
+  js = js.replace(/\.ToCharArray\(\)/g, ".split('')");
+  js = js.replace(/\.ToLower\(\)/g, ".toLowerCase()");
+  js = js.replace(/\.ToUpper\(\)/g, ".toUpperCase()");
+  js = js.replace(/\.Substring\(/g, ".substr(");
+
+  // 12. LINQ / Array helpers
+  js = js.replace(/\.ToList\(\)/g, "");
+  js = js.replace(/\.ToArray\(\)/g, "");
+
+  return js;
+}
+
 function executeCsharpInSandbox(
   code: string,
   methodName: string,
@@ -344,86 +484,233 @@ function executeCsharpInSandbox(
   const stdout: string[] = [];
 
   try {
-    let js = code;
+    const transpiledJs = transpileCsharpToJs(code);
 
-    // 1. Intercept Console.WriteLine to capture stdout
-    js = js.replace(/Console\.WriteLine\((.*?)\);/g, "__stdout.push(String($1));");
+    // Helpers for sandbox execution
+    const createList = (init?: any) => {
+      const list: any[] = [];
+      if (init !== undefined) {
+        if (Array.isArray(init)) list.push(...init);
+        else if (typeof init !== "number" && init && typeof init[Symbol.iterator] === "function") {
+          list.push(...Array.from(init));
+        }
+      }
+      return list;
+    };
 
-    // 2. Remove usings
-    js = js.replace(/using\s+[\w\.]+;/g, "");
+    const createSet = (init?: any) => {
+      const s = new Set<any>();
+      if (init !== undefined) {
+        if (Array.isArray(init)) for (const item of init) s.add(item);
+        else if (init && typeof init[Symbol.iterator] === "function") {
+          for (const item of init) s.add(item);
+        }
+      }
+      (s as any).Add = function (item: any) { s.add(item); return s; };
+      (s as any).add = function (item: any) { s.add(item); return s; };
+      (s as any).Contains = function (item: any) { return s.has(item); };
+      (s as any).contains = function (item: any) { return s.has(item); };
+      (s as any).Remove = function (item: any) { return s.delete(item); };
+      return s;
+    };
 
-    // 3. Remove static void Main method to prevent conflicting calls
-    js = js.replace(/static\s+void\s+Main\s*\([^)]*\)\s*\{[\s\S]*?\}\s*$/m, "");
+    const createDictionary = () => {
+      const map = new Map<any, any>();
+      const normalizeKey = (k: any) => {
+        if (map.has(k)) return k;
+        if (typeof k === "string" && !isNaN(Number(k)) && map.has(Number(k))) return Number(k);
+        if (typeof k === "number" && map.has(String(k))) return String(k);
+        return k;
+      };
 
-    // 4. Convert method signatures: public static <ret> MethodName(<params>) -> function MethodName(<params>)
-    js = js.replace(/public\s+static\s+[\w<>\[\],\s]+\s+(\w+)\s*\(([^)]*)\)\s*\{/g, (m, name, paramStr) => {
-      const cleanArgs = paramStr
-        .split(",")
-        .map((p) => p.trim().split(/\s+/).pop())
-        .filter(Boolean)
-        .join(", ");
-      return `function ${name}(${cleanArgs}) {`;
-    });
+      return new Proxy(map, {
+        get(target, prop: any) {
+          if (prop === "ContainsKey" || prop === "containsKey") {
+            return (k: any) =>
+              target.has(k) ||
+              (typeof k === "number" && target.has(String(k))) ||
+              (typeof k === "string" && !isNaN(Number(k)) && target.has(Number(k)));
+          }
+          if (prop === "ContainsValue") return (v: any) => Array.from(target.values()).includes(v);
+          if (prop === "Add") return (k: any, v: any) => target.set(normalizeKey(k), v);
+          if (prop === "Remove") return (k: any) => target.delete(normalizeKey(k));
+          if (prop === "Count" || prop === "length" || prop === "size") return target.size;
+          if (prop === "Keys") return Array.from(target.keys());
+          if (prop === "Values") return Array.from(target.values());
+          if (prop in target || typeof (target as any)[prop] === "function") {
+            const val = (target as any)[prop];
+            return typeof val === "function" ? val.bind(target) : val;
+          }
+          return target.get(normalizeKey(prop));
+        },
+        set(target, prop: any, val: any) {
+          target.set(normalizeKey(prop), val);
+          return true;
+        },
+      });
+    };
 
-    // 5. Strip outer class wrapper
-    js = js.replace(/class\s+\w+\s*\{/, "");
-    const lastBrace = js.lastIndexOf("}");
-    if (lastBrace !== -1) {
-      js = js.slice(0, lastBrace) + js.slice(lastBrace + 1);
+    const createString = (chars: any) => {
+      if (Array.isArray(chars)) return chars.join("");
+      return String(chars);
+    };
+
+    class StringBuilder {
+      parts: string[] = [];
+      constructor(init = "") {
+        if (init) this.parts.push(init);
+      }
+      Append(v: any) { this.parts.push(String(v)); return this; }
+      append(v: any) { this.parts.push(String(v)); return this; }
+      Clear() { this.parts = []; return this; }
+      clear() { this.parts = []; return this; }
+      get Length() { return this.ToString().length; }
+      get length() { return this.ToString().length; }
+      ToString() { return this.parts.join(""); }
+      toString() { return this.parts.join(""); }
     }
 
-    // 6. Convert foreach loops: foreach (var x in y) -> for (const x of y)
-    js = js.replace(/foreach\s*\(\s*(?:var|string|int|char|long|bool)\s+(\w+)\s+in\s+([^)]+)\)/g, "for (const $1 of $2)");
+    const stringObj = {
+      IsNullOrEmpty: (s: any) => s === null || s === undefined || s === "" || s.length === 0,
+      IsNullOrWhiteSpace: (s: any) => s === null || s === undefined || String(s).trim().length === 0,
+      Join: (sep: any, items: any) => {
+        if (!items) return "";
+        if (Array.isArray(items)) return items.join(sep);
+        if (items instanceof Set || items instanceof Map) return Array.from(items).join(sep);
+        if (typeof items[Symbol.iterator] === "function") return Array.from(items).join(sep);
+        return String(items);
+      },
+    };
 
-    // 7. Convert variable and collection declarations
-    js = js.replace(/\b(?:int|string|bool|double|float|long|var|char)\s+(\w+)\s*=/g, "let $1 =");
-    js = js.replace(/\b(?:int|string|bool|double|float|long|char)\s*\[\]\s+(\w+)\s*=/g, "let $1 =");
-    js = js.replace(/\b(?:List<[^>]+>|HashSet<[^>]+>|Dictionary<[^>]+>|StringBuilder)\s+(\w+)\s*=/g, "let $1 =");
+    const charObj = {
+      IsDigit: (c: any) => typeof c === "string" && /^[0-9]$/.test(c),
+      IsLetter: (c: any) => typeof c === "string" && /^[a-zA-Z]$/.test(c),
+      IsLetterOrDigit: (c: any) => typeof c === "string" && /^[a-zA-Z0-9]$/.test(c),
+      ToLower: (c: any) => typeof c === "string" ? c.toLowerCase() : c,
+      ToUpper: (c: any) => typeof c === "string" ? c.toUpperCase() : c,
+      IsWhiteSpace: (c: any) => typeof c === "string" && /\s/.test(c),
+    };
 
-    // 8. Convert collections: new HashSet<T> -> new Set, new List<T> -> []
-    js = js.replace(/new\s+HashSet<[^>]+>\s*\(([^)]*)\)/g, "new Set($1)");
-    js = js.replace(/new\s+HashSet<[^>]+>\s*\(\)/g, "new Set()");
-    js = js.replace(/new\s+List<[^>]+>\s*\(([^)]*)\)/g, "[]");
-    js = js.replace(/new\s+Dictionary<[^>]+>\s*\(([^)]*)\)/g, "new Map()");
+    const intObj = {
+      Parse: (s: any) => parseInt(String(s).trim(), 10),
+      TryParse: (s: any) => !isNaN(parseInt(String(s).trim(), 10)),
+      MaxValue: 2147483647,
+      MinValue: -2147483648,
+    };
 
-    // 9. Method & property conversions (.Length, .Count, .Split, .Join, .Contains, int.Parse, etc.)
-    js = js.replace(/\.Length\b/g, ".length");
-    js = js.replace(/\.Count\b/g, ".length");
-    js = js.replace(/\.Split\(\s*new\s*\[\]\s*\{([^}]+)\}[^)]*\)/g, ".split($1)");
-    js = js.replace(/\.Split\(/g, ".split(");
-    js = js.replace(/string\.Join\(([^,]+),\s*([^)]+)\)/g, "$2.join($1)");
-    js = js.replace(/String\.Join\(([^,]+),\s*([^)]+)\)/g, "$2.join($1)");
-    js = js.replace(/int\.Parse\(([^)]+)\)/g, "parseInt($1, 10)");
-    js = js.replace(/Convert\.ToInt32\(([^)]+)\)/g, "parseInt($1, 10)");
-    js = js.replace(/char\.IsLetter\(([^)]+)\)/g, "/[a-zA-Z]/.test($1)");
-    js = js.replace(/char\.IsDigit\(([^)]+)\)/g, "/[0-9]/.test($1)");
-    js = js.replace(/char\.IsLetterOrDigit\(([^)]+)\)/g, "/[a-zA-Z0-9]/.test($1)");
-    js = js.replace(/\.ToLower\(\)/g, ".toLowerCase()");
-    js = js.replace(/\.ToUpper\(\)/g, ".toUpperCase()");
-    js = js.replace(/\.Substring\(/g, ".substr(");
+    const ConvertObj = {
+      ToInt32: (v: any) => parseInt(String(v).trim(), 10),
+      ToString: (v: any) => String(v),
+    };
 
-    // 10. Handle Add and Contains polymorphism
-    js = js.replace(/(\w+)\.Add\(([^)]+)\)/g, "($1.push ? $1.push($2) : $1.add($2))");
-    js = js.replace(/(\w+)\.Contains\(([^)]+)\)/g, "($1.includes ? $1.includes($2) : ($1.has ? $1.has($2) : false))");
+    const ArrayObj = {
+      Reverse: (arr: any[]) => arr.reverse(),
+      Sort: (arr: any[]) => arr.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)),
+      IndexOf: (arr: any[], val: any) => arr.indexOf(val),
+    };
+
+    const MathObj = Object.assign(Object.create(Math), {
+      Max: Math.max,
+      Min: Math.min,
+      Abs: Math.abs,
+      Pow: Math.pow,
+      Sqrt: Math.sqrt,
+      Floor: Math.floor,
+      Ceiling: Math.ceil,
+      Round: Math.round,
+    });
+
+    const ConsoleObj = {
+      WriteLine: (...a: any[]) => stdout.push(a.map((x) => (typeof x === "object" ? JSON.stringify(x) : String(x))).join(" ")),
+      Write: (...a: any[]) => stdout.push(a.map(String).join(" ")),
+      ReadLine: () => "",
+    };
 
     // Setup isolated execution sandbox
     const sandbox: Record<string, any> = {
       __stdout: stdout,
       __args: Array.isArray(args) ? args : [args],
       __result: undefined,
-      Math,
+      createList,
+      createSet,
+      createDictionary,
+      createString,
+      StringBuilder,
+      string: stringObj,
+      String: Object.assign(String, stringObj),
+      char: charObj,
+      int: intObj,
+      Convert: ConvertObj,
+      Array: Object.assign(Array, ArrayObj),
+      Math: MathObj,
+      Console: ConsoleObj,
+      StringSplitOptions: { None: 0, RemoveEmptyEntries: 1, TrimEntries: 2 },
       parseInt,
       parseFloat,
-      Array,
-      Set,
-      Map,
-      String,
       Boolean,
       Number,
+      Set,
+      Map,
     };
 
+    // In-VM prototype setup
+    const polyfillCode = `
+      const _sProto = ("").constructor.prototype;
+      if (!_sProto.Contains) {
+        _sProto.Contains = function(s) { return this.indexOf(s) !== -1; };
+      }
+      if (!_sProto.Trim) {
+        _sProto.Trim = function(...chars) {
+          if (!chars || chars.length === 0) return this.trim();
+          let res = this;
+          for (const ch of chars) {
+            while (res.startsWith(ch)) res = res.slice(ch.length);
+            while (res.endsWith(ch)) res = res.slice(0, -ch.length);
+          }
+          return res.trim();
+        };
+      }
+      if (!_sProto.ToCharArray) {
+        _sProto.ToCharArray = function() { return this.split(""); };
+      }
+      if (!_sProto.Substring) {
+        _sProto.Substring = function(start, len) { return len !== undefined ? this.substr(start, len) : this.substring(start); };
+      }
+      if (!_sProto.ToLower) {
+        _sProto.ToLower = function() { return this.toLowerCase(); };
+      }
+      if (!_sProto.ToUpper) {
+        _sProto.ToUpper = function() { return this.toUpperCase(); };
+      }
+
+      const _aProto = ([]).constructor.prototype;
+      if (!_aProto.Contains) {
+        _aProto.Contains = function(x) { return this.indexOf(x) !== -1; };
+      }
+      if (!_aProto.Add) {
+        _aProto.Add = function(x) { this.push(x); return this; };
+      }
+      if (!_aProto.Remove) {
+        _aProto.Remove = function(x) {
+          const idx = this.indexOf(x);
+          if (idx !== -1) { this.splice(idx, 1); return true; }
+          return false;
+        };
+      }
+      if (!_aProto.RemoveAt) {
+        _aProto.RemoveAt = function(i) { this.splice(i, 1); };
+      }
+      if (!_aProto.Max) {
+        _aProto.Max = function() { return Math.max(...this); };
+      }
+      if (!_aProto.Min) {
+        _aProto.Min = function() { return Math.min(...this); };
+      }
+    `;
+
     const scriptText = `
-      ${js}
+      ${polyfillCode}
+      ${transpiledJs}
       if (typeof ${methodName} === "function") {
         __result = ${methodName}.apply(null, __args);
       }
@@ -517,8 +804,8 @@ function evaluateCsharpLocally(
     };
   }
 
-  // 2. Identify the primary function name
-  const methodMatch = code.match(/public\s+static\s+[\w<>\[\],\s]+\s+(\w+)\s*\(/);
+  // 2. Identify the primary function name (ignoring Main)
+  const methodMatch = code.match(/(?:public|private|protected|internal)?\s*(?:static\s+)?[\w<>\[\],\s]+\s+(?!Main\b)(\w+)\s*\(/);
   const methodName = methodMatch ? methodMatch[1] : "";
 
   // 3. Check if candidate left the starter boilerplate untouched
@@ -682,7 +969,7 @@ app.get("/api/health", (req, res) => {
 });
 
 // Compile & Run C# Code API
-app.post("/api/compile-run", async (req, res) => {
+app.post(["/api/compile-run", "/api/execute-code"], async (req, res) => {
   const { code, challengeTitle, challengeDescription, testCases, isSubmission } = req.body;
 
   if (!code || typeof code !== "string") {
