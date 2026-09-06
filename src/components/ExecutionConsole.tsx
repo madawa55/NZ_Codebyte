@@ -25,6 +25,8 @@ interface ExecutionConsoleProps {
   isReviewing: boolean;
   seniorFeedback: SeniorReviewFeedback | null;
   onApplySeniorSnippet?: (code: string) => void;
+  onRunCode?: () => void;
+  onSubmitCode?: () => void;
   isDark?: boolean;
 }
 
@@ -39,11 +41,20 @@ export const ExecutionConsole: React.FC<ExecutionConsoleProps> = ({
   isReviewing,
   seniorFeedback,
   onApplySeniorSnippet,
+  onRunCode,
+  onSubmitCode,
   isDark = true,
 }) => {
   const [activeTab, setActiveTab] = useState<"cases" | "results" | "diagnostics" | "senior-review">("cases");
   const [selectedCaseIndex, setSelectedCaseIndex] = useState<number>(0);
   const [copiedSnippet, setCopiedSnippet] = useState(false);
+
+  // Automatically switch to output when running
+  useEffect(() => {
+    if (isRunning) {
+      setActiveTab("results");
+    }
+  }, [isRunning]);
 
   // Automatically switch tabs upon results or senior feedback
   useEffect(() => {
@@ -169,8 +180,24 @@ export const ExecutionConsole: React.FC<ExecutionConsoleProps> = ({
           </div>
         </div>
 
-        {/* Status dots on right */}
+        {/* Console Action Buttons */}
         <div className="flex items-center gap-2">
+          {onRunCode && (
+            <button
+              onClick={onRunCode}
+              disabled={isRunning}
+              className={`flex items-center gap-1.5 text-xs px-3 py-1 rounded-lg font-semibold shadow-xs transition-colors ${
+                isRunning 
+                  ? "bg-slate-700 text-slate-400 cursor-not-allowed" 
+                  : "bg-emerald-600 hover:bg-emerald-500 text-white"
+              }`}
+              title="Execute test cases (Ctrl+Enter)"
+            >
+              <Play className="w-3 h-3 fill-white" />
+              <span>{isRunning ? "Running..." : "Run Tests"}</span>
+            </button>
+          )}
+
           {!seniorFeedback && (
             <button
               onClick={onRequestSeniorReview}
@@ -185,10 +212,6 @@ export const ExecutionConsole: React.FC<ExecutionConsoleProps> = ({
               <span>{isReviewing ? "Evaluating..." : "Review"}</span>
             </button>
           )}
-          <div className="flex gap-1.5">
-            <div className={`w-2 h-2 rounded-full ${isDark ? "bg-slate-700" : "bg-slate-300"}`}></div>
-            <div className={`w-2 h-2 rounded-full ${isDark ? "bg-slate-700" : "bg-slate-300"}`}></div>
-          </div>
         </div>
       </div>
 
@@ -265,6 +288,47 @@ export const ExecutionConsole: React.FC<ExecutionConsoleProps> = ({
                     {visibleTestCases[selectedCaseIndex].explanation}
                   </div>
                 )}
+
+                {/* Quick execution bar inside test case view */}
+                <div className={`pt-3 border-t flex items-center justify-between font-sans ${
+                  isDark ? "border-slate-800" : "border-slate-200"
+                }`}>
+                  <div className="flex items-center gap-2">
+                    {onRunCode && (
+                      <button
+                        onClick={onRunCode}
+                        disabled={isRunning}
+                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-all ${
+                          isRunning 
+                            ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                            : "bg-emerald-600 hover:bg-emerald-500 text-white"
+                        }`}
+                      >
+                        <Play className="w-3.5 h-3.5 fill-white" />
+                        <span>{isRunning ? "Running tests..." : "Run Tests"}</span>
+                      </button>
+                    )}
+                    {onSubmitCode && (
+                      <button
+                        onClick={onSubmitCode}
+                        disabled={isRunning}
+                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-all ${
+                          isRunning
+                            ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                            : "bg-indigo-600 hover:bg-indigo-500 text-white"
+                        }`}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Submit Solution</span>
+                      </button>
+                    )}
+                  </div>
+                  <span className={`text-[11px] font-sans ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                    Shortcut: <kbd className={`px-1.5 py-0.5 rounded font-mono text-[10px] ${
+                      isDark ? "bg-slate-800 text-slate-300" : "bg-slate-200 text-slate-700"
+                    }`}>Ctrl+Enter</kbd>
+                  </span>
+                </div>
               </div>
             )}
 
@@ -305,7 +369,19 @@ export const ExecutionConsole: React.FC<ExecutionConsoleProps> = ({
         {/* Tab 2: Test Results / Terminal Output */}
         {activeTab === "results" && (
           <div className="space-y-3">
-            {!executionResult ? (
+            {isRunning ? (
+              <div className={`rounded-xl border p-8 text-center font-mono space-y-3 ${
+                isDark ? "bg-slate-950 border-slate-800 text-slate-300" : "bg-slate-50 border-slate-200 text-slate-700"
+              }`}>
+                <div className="w-7 h-7 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-indigo-400">Compiling with Roslyn & Executing Test Cases...</p>
+                  <p className={`text-[11px] ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                    Validating C# types, executing sandbox, measuring execution time & peak memory
+                  </p>
+                </div>
+              </div>
+            ) : !executionResult ? (
               <div className={`rounded-xl border p-6 text-center font-mono space-y-2 ${
                 isDark ? "bg-black/40 border-slate-800/80 text-slate-500" : "bg-slate-50 border-slate-200 text-slate-500"
               }`}>
@@ -321,10 +397,10 @@ export const ExecutionConsole: React.FC<ExecutionConsoleProps> = ({
                 }`}>
                   <div className="flex items-center justify-between">
                     <span className={executionResult.overallStatus === "passed" ? "text-emerald-400 font-bold" : "text-red-400 font-bold"}>
-                      [{executionResult.overallStatus.toUpperCase()}] {executionResult.stats.passedTests}/{executionResult.stats.totalTests} Tests Passed
+                      [{executionResult.overallStatus.toUpperCase()}] {executionResult.stats?.passedTests ?? 0}/{executionResult.stats?.totalTests ?? (executionResult.results?.length || 0)} Tests Passed
                     </span>
                     <span className="text-slate-400 text-[11px]">
-                      Execution: {executionResult.stats.totalExecutionTimeMs}ms | Memory: {executionResult.stats.peakMemoryKb}KB
+                      Execution: {executionResult.stats?.totalExecutionTimeMs ?? 0}ms | Memory: {executionResult.stats?.peakMemoryKb ?? 0}KB
                     </span>
                   </div>
                   <p className="text-slate-400 text-[11px]">

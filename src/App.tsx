@@ -161,9 +161,9 @@ export default function App() {
     if (isRunning || isSubmitting) return;
     setIsRunning(true);
 
-    try {
-      const visibleCases = currentChallenge.testCases.filter((tc) => !tc.isHidden);
+    const visibleCases = currentChallenge.testCases.filter((tc) => !tc.isHidden);
 
+    try {
       const response = await fetch("/api/compile-run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -176,11 +176,35 @@ export default function App() {
         }),
       });
 
+      if (!response.ok) {
+        const errText = await response.text();
+        let errMsg = "Execution request failed";
+        try {
+          const errJson = JSON.parse(errText);
+          errMsg = errJson.error || errJson.message || errMsg;
+        } catch {}
+        setExecutionResult({
+          compilationSuccess: false,
+          overallStatus: "error",
+          diagnostics: [{ line: 1, column: 1, severity: "error", message: errMsg, code: "CS9999" }],
+          results: [],
+          stats: { passedTests: 0, totalTests: visibleCases.length, totalExecutionTimeMs: 0, peakMemoryKb: 0 },
+        });
+        return;
+      }
+
       const data: ExecutionResult = await response.json();
       setExecutionResult(data);
       setDiagnostics(data.diagnostics || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to run code:", err);
+      setExecutionResult({
+        compilationSuccess: false,
+        overallStatus: "error",
+        diagnostics: [{ line: 1, column: 1, severity: "error", message: `Execution failed: ${err.message || err}`, code: "CS9999" }],
+        results: [],
+        stats: { passedTests: 0, totalTests: visibleCases.length, totalExecutionTimeMs: 0, peakMemoryKb: 0 },
+      });
     } finally {
       setIsRunning(false);
     }
@@ -220,11 +244,35 @@ export default function App() {
         }),
       });
 
+      if (!response.ok) {
+        const errText = await response.text();
+        let errMsg = "Execution request failed";
+        try {
+          const errJson = JSON.parse(errText);
+          errMsg = errJson.error || errJson.message || errMsg;
+        } catch {}
+        setExecutionResult({
+          compilationSuccess: false,
+          overallStatus: "error",
+          diagnostics: [{ line: 1, column: 1, severity: "error", message: errMsg, code: "CS9999" }],
+          results: [],
+          stats: { passedTests: 0, totalTests: 1, totalExecutionTimeMs: 0, peakMemoryKb: 0 },
+        });
+        return;
+      }
+
       const data: ExecutionResult = await response.json();
       setExecutionResult(data);
       setDiagnostics(data.diagnostics || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to run custom input:", err);
+      setExecutionResult({
+        compilationSuccess: false,
+        overallStatus: "error",
+        diagnostics: [{ line: 1, column: 1, severity: "error", message: `Execution failed: ${err.message || err}`, code: "CS9999" }],
+        results: [],
+        stats: { passedTests: 0, totalTests: 1, totalExecutionTimeMs: 0, peakMemoryKb: 0 },
+      });
     } finally {
       setIsRunning(false);
     }
@@ -247,6 +295,23 @@ export default function App() {
           isSubmission: true,
         }),
       });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        let errMsg = "Execution request failed";
+        try {
+          const errJson = JSON.parse(errText);
+          errMsg = errJson.error || errJson.message || errMsg;
+        } catch {}
+        setExecutionResult({
+          compilationSuccess: false,
+          overallStatus: "error",
+          diagnostics: [{ line: 1, column: 1, severity: "error", message: errMsg, code: "CS9999" }],
+          results: [],
+          stats: { passedTests: 0, totalTests: currentChallenge.testCases.length, totalExecutionTimeMs: 0, peakMemoryKb: 0 },
+        });
+        return;
+      }
 
       const data: ExecutionResult = await response.json();
       setExecutionResult(data);
@@ -271,8 +336,15 @@ export default function App() {
         // Trigger Senior Review
         handleRequestSeniorReview();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Submission failed:", err);
+      setExecutionResult({
+        compilationSuccess: false,
+        overallStatus: "error",
+        diagnostics: [{ line: 1, column: 1, severity: "error", message: `Submission failed: ${err.message || err}`, code: "CS9999" }],
+        results: [],
+        stats: { passedTests: 0, totalTests: currentChallenge.testCases.length, totalExecutionTimeMs: 0, peakMemoryKb: 0 },
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -341,6 +413,22 @@ export default function App() {
       handleCodeChange(snippet);
     }
   };
+
+  // Keyboard shortcut: Ctrl+Enter or Cmd+Enter to Run Code
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleSubmitCode();
+        } else {
+          handleRunCode();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [code, currentChallenge, isRunning, isSubmitting]);
 
   const isDark = currentTheme.isDark;
 
@@ -487,6 +575,8 @@ export default function App() {
             onRunCustomTest={handleRunCustomTest}
             onRequestSeniorReview={handleRequestSeniorReview}
             onApplySeniorSnippet={handleApplySeniorSnippet}
+            onRunCode={handleRunCode}
+            onSubmitCode={handleSubmitCode}
             isDark={isDark}
           />
         </section>
